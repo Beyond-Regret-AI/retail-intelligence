@@ -312,6 +312,7 @@ Validation results:
 - App deployment: `databricks bundle run retail_intelligence_app -t dev --profile sa_profile` passed.
 - App status: `databricks apps get retail-intelligence --profile sa_profile` reports `RUNNING`.
 - Runtime app view fix: the app service principal `71dbfb5a-4671-4978-8c84-ee64069327f1` was granted `CAN_USE` on SQL warehouse `ffdf1653dbc170db`, `USE CATALOG` on `workspace`, and `USE SCHEMA`, `SELECT` on `workspace.retail_intelligence` so SQL-backed views can run and read the demo tables.
+- UX cleanup deployment: removed the confusing in-page journey strip, changed churn risk distribution to a pie chart, renamed data-quality/table-count operational panels for business readability, and mapped loyalty tiers from Bronze/Silver/Gold/Platinum to customer club labels to avoid confusion with Medallion architecture.
 - Local environment note: Node/npm are available outside the Codex sandbox. Use escalated shell commands and call `npm.cmd` instead of `npm` in PowerShell to avoid the `npm.ps1` execution-policy block.
 
 Issues found and fixed during Phase 2:

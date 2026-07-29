@@ -16,12 +16,10 @@ import {
   Activity,
   AlertTriangle,
   ArrowRight,
-  Bot,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
   Database,
-  LineChart,
   Phone,
   ShieldCheck,
   Sparkles,
@@ -76,6 +74,34 @@ function formatSek(value: unknown): string {
 
 function formatPct(value: unknown): string {
   return `${Math.round(numberValue(value) * 100)}%`;
+}
+
+function displayTier(value: unknown): string {
+  const tiers: Record<string, string> = {
+    Bronze: 'Club Member',
+    Silver: 'Club Plus',
+    Gold: 'Club Premier',
+    Platinum: 'Club Signature',
+  };
+  const tier = textValue(value);
+  return tiers[tier] ?? tier;
+}
+
+function displayTableName(value: unknown): string {
+  const names: Record<string, string> = {
+    bronze_campaign_interactions: 'Campaign interactions',
+    bronze_customers: 'Customer profiles',
+    bronze_loyalty_activity: 'Loyalty activity',
+    bronze_retention_documents: 'Retention policy documents',
+    bronze_support_tickets: 'Support tickets',
+    bronze_transactions: 'Transactions',
+  };
+  const tableName = textValue(value);
+  return names[tableName] ?? tableName.replace(/^bronze_/, '').replaceAll('_', ' ');
+}
+
+function displayQualityStatus(value: unknown): string {
+  return textValue(value).toLowerCase() === 'pass' ? 'Validated' : textValue(value);
 }
 
 function normalizeList(value: unknown): string[] {
@@ -134,35 +160,6 @@ function QueryBlock({
   return <>{children}</>;
 }
 
-function Journey({ active }: { active: 1 | 2 | 3 | 4 }) {
-  const steps = [
-    ['Unified Data', Database],
-    ['Predict Risk', LineChart],
-    ['Generate Action', Bot],
-    ['Drive Outcome', Target],
-  ] as const;
-
-  return (
-    <div className="grid gap-2 sm:grid-cols-4" aria-label="Solution journey">
-      {steps.map(([label, Icon], index) => {
-        const stage = (index + 1) as 1 | 2 | 3 | 4;
-        const selected = stage === active;
-        return (
-          <div
-            key={label}
-            className={`flex min-h-12 items-center gap-2 rounded-md border px-3 py-2 text-sm ${
-              selected ? 'border-primary bg-primary/10 text-foreground' : 'bg-background text-muted-foreground'
-            }`}
-          >
-            <Icon className="h-4 w-4 shrink-0" />
-            <span className="font-medium">{stage}. {label}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function OperationsPanel() {
   const [open, setOpen] = useState(false);
   const status = useQuery('operations_status');
@@ -194,7 +191,7 @@ function OperationsPanel() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Layer Counts</CardTitle>
+              <CardTitle className="text-sm">Table Volumes</CardTitle>
             </CardHeader>
             <CardContent>
               <QueryBlock loading={counts.loading} error={counts.error} empty={!counts.data?.length}>
@@ -211,15 +208,16 @@ function OperationsPanel() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Data Quality</CardTitle>
+              <CardTitle className="text-sm">Source Health Checks</CardTitle>
             </CardHeader>
             <CardContent>
               <QueryBlock loading={quality.loading} error={quality.error} empty={!quality.data?.length}>
-                <div className="space-y-1 text-xs">
+                <div className="space-y-2 text-xs">
+                  <p className="text-muted-foreground">Input tables passed the prototype completeness checks before Customer 360 was built.</p>
                   {rows(quality.data).slice(0, 6).map((row) => (
                     <div key={textValue(row.table_name)} className="flex justify-between gap-3">
-                      <span className="truncate">{textValue(row.table_name)}</span>
-                      <Badge variant="outline">{textValue(row.quality_status)}</Badge>
+                      <span className="truncate">{displayTableName(row.table_name)}</span>
+                      <Badge variant="outline">{displayQualityStatus(row.quality_status)}</Badge>
                     </div>
                   ))}
                 </div>
@@ -259,6 +257,53 @@ function Layout() {
   );
 }
 
+function RiskPieChart({ data }: { data: Row[] }) {
+  const order = ['High', 'Medium', 'Low'];
+  const palette: Record<string, string> = {
+    High: 'var(--destructive)',
+    Medium: 'var(--warning)',
+    Low: 'var(--success)',
+  };
+  const sortedRows = [...data].sort((a, b) => order.indexOf(textValue(a.risk_category)) - order.indexOf(textValue(b.risk_category)));
+  const total = sortedRows.reduce((sum, row) => sum + numberValue(row.customers), 0);
+  let cursor = 0;
+  const gradient = sortedRows
+    .map((row) => {
+      const label = textValue(row.risk_category);
+      const start = cursor;
+      const end = total > 0 ? cursor + (numberValue(row.customers) / total) * 360 : cursor;
+      cursor = end;
+      return `${palette[label] ?? 'var(--primary)'} ${start}deg ${end}deg`;
+    })
+    .join(', ');
+
+  return (
+    <div className="grid gap-5 sm:grid-cols-[160px_1fr] sm:items-center">
+      <div
+        className="mx-auto h-40 w-40 rounded-full border"
+        style={{ background: `conic-gradient(${gradient})` }}
+        role="img"
+        aria-label="Churn risk distribution pie chart"
+      />
+      <div className="space-y-3">
+        {sortedRows.map((row) => {
+          const label = textValue(row.risk_category);
+          const customers = numberValue(row.customers);
+          return (
+            <div key={label} className="flex items-center justify-between gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: palette[label] ?? 'var(--primary)' }} />
+                <span>{label} risk</span>
+              </div>
+              <span className="font-medium">{customers} ({total > 0 ? Math.round((customers / total) * 100) : 0}%)</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function Kpi({ title, value, note, icon: Icon }: { title: string; value: string; note: string; icon: LucideIcon }) {
   return (
     <Card>
@@ -284,12 +329,10 @@ function ExecutiveOverview() {
   const metric = metrics.data?.[0] as Row | undefined;
   const riskRows = rows(distribution.data);
   const driverRows = rows(drivers.data);
-  const maxRisk = Math.max(...(riskRows.length ? riskRows.map((row) => numberValue(row.customers)) : [1]));
   const maxDriver = Math.max(...(driverRows.length ? driverRows.map((row) => numberValue(row.customers)) : [1]));
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <Journey active={4} />
       <div>
         <h2 className="text-2xl font-semibold">Executive Overview</h2>
         <p className="text-sm text-muted-foreground">Leadership now has one governed view of customer risk and revenue exposure.</p>
@@ -306,23 +349,11 @@ function ExecutiveOverview() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Churn-Risk Distribution</CardTitle>
+            <CardTitle>Churn Risk Distribution</CardTitle>
           </CardHeader>
           <CardContent>
             <QueryBlock loading={distribution.loading} error={distribution.error} empty={!distribution.data?.length}>
-              <div className="space-y-3">
-                {riskRows.map((row) => (
-                  <div key={textValue(row.risk_category)}>
-                    <div className="mb-1 flex justify-between text-sm">
-                      <span>{textValue(row.risk_category)}</span>
-                      <span>{numberValue(row.customers)}</span>
-                    </div>
-                    <div className="h-2 rounded bg-muted">
-                      <div className="h-2 rounded bg-primary" style={{ width: `${(numberValue(row.customers) / maxRisk) * 100}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <RiskPieChart data={riskRows} />
             </QueryBlock>
           </CardContent>
         </Card>
@@ -350,7 +381,7 @@ function ExecutiveOverview() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>High Risk by Segment</CardTitle>
+            <CardTitle>High Risk by Customer Segment</CardTitle>
           </CardHeader>
           <CardContent>
             <QueryBlock loading={segments.loading} error={segments.error} empty={!segments.data?.length}>
@@ -359,7 +390,7 @@ function ExecutiveOverview() {
                   <div key={`${textValue(row.segment)}-${textValue(row.loyalty_tier)}`} className="flex items-center justify-between gap-3 border-b py-2 last:border-0">
                     <div>
                       <div className="font-medium">{textValue(row.segment)}</div>
-                      <div className="text-xs text-muted-foreground">{textValue(row.loyalty_tier)}</div>
+                      <div className="text-xs text-muted-foreground">{displayTier(row.loyalty_tier)}</div>
                     </div>
                     <div className="text-right">
                       <div>{numberValue(row.high_risk_customers)} customers</div>
@@ -385,7 +416,7 @@ function ExecutiveOverview() {
                   <tr>
                     <th className="py-2">Customer</th>
                     <th>Segment</th>
-                    <th>Tier</th>
+                    <th>Customer club</th>
                     <th>Risk</th>
                     <th>Probability</th>
                     <th>Revenue at risk</th>
@@ -402,7 +433,7 @@ function ExecutiveOverview() {
                         <div className="text-xs text-muted-foreground">{textValue(row.customer_id)}</div>
                       </td>
                       <td>{textValue(row.segment)}</td>
-                      <td>{textValue(row.loyalty_tier)}</td>
+                      <td>{displayTier(row.loyalty_tier)}</td>
                       <td><Badge variant={badgeVariant(row.risk_category)}>{textValue(row.risk_category)}</Badge></td>
                       <td>{formatPct(row.churn_probability)}</td>
                       <td>{formatSek(row.revenue_at_risk_sek)}</td>
@@ -439,7 +470,6 @@ function Customer360() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <Journey active={2} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold">Customer 360</h2>
@@ -466,7 +496,7 @@ function Customer360() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Info label="Segment" value={textValue(profile?.segment)} />
-                <Info label="Loyalty tier" value={textValue(profile?.loyalty_tier)} />
+                <Info label="Customer club" value={displayTier(profile?.loyalty_tier)} />
                 <Info label="Region" value={textValue(profile?.region)} />
                 <Info label="Unused points" value={numberValue(profile?.unused_loyalty_points).toLocaleString('sv-SE')} />
               </div>
@@ -566,7 +596,6 @@ function RetentionCopilot() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <Journey active={3} />
       <div>
         <h2 className="text-2xl font-semibold">Retention Copilot</h2>
         <p className="text-sm text-muted-foreground">Customer 360 + ML Prediction + Business Knowledge to Next-Best Action.</p>
