@@ -24,7 +24,7 @@ flowchart TD
 
 ## Current Phase
 
-Phase 5 adds the AppKit source for the three-page Databricks App: Executive Overview, Customer 360, and Retention Copilot.
+Phase 6 deployed the AppKit source for the three-page Databricks App: Executive Overview, Customer 360, and Retention Copilot.
 
 ## Local Validation
 
@@ -59,6 +59,13 @@ databricks bundle run retail_intelligence_pipeline -t dev --profile sa_profile
 ## Known Limitations
 
 Current generated actions use deterministic fallback logic and should not be described as live LLM output.
+
+If the app shows `Unable to load this view`, verify the Databricks App service principal has read access to the Unity Catalog data:
+
+```sql
+GRANT USE CATALOG ON CATALOG workspace TO `71dbfb5a-4671-4978-8c84-ee64069327f1`;
+GRANT USE SCHEMA, SELECT ON SCHEMA workspace.retail_intelligence TO `71dbfb5a-4671-4978-8c84-ee64069327f1`;
+```
 
 ## App URL
 

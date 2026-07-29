@@ -311,6 +311,7 @@ Validation results:
 - AppKit validation: `databricks apps validate --profile sa_profile` passed.
 - App deployment: `databricks bundle run retail_intelligence_app -t dev --profile sa_profile` passed.
 - App status: `databricks apps get retail-intelligence --profile sa_profile` reports `RUNNING`.
+- Runtime app view fix: the app service principal `71dbfb5a-4671-4978-8c84-ee64069327f1` was granted `USE CATALOG` on `workspace` and `USE SCHEMA`, `SELECT` on `workspace.retail_intelligence` so SQL-backed views can read the demo tables.
 - Local environment note: Node/npm are available outside the Codex sandbox. Use escalated shell commands and call `npm.cmd` instead of `npm` in PowerShell to avoid the `npm.ps1` execution-policy block.
 
 Issues found and fixed during Phase 2:
@@ -433,6 +434,15 @@ Direct app status after deployment:
 
 ```powershell
 databricks apps get retail-intelligence --profile sa_profile
+```
+
+App view permissions troubleshooting:
+
+```sql
+GRANT USE CATALOG ON CATALOG workspace TO `71dbfb5a-4671-4978-8c84-ee64069327f1`;
+GRANT USE SCHEMA, SELECT ON SCHEMA workspace.retail_intelligence TO `71dbfb5a-4671-4978-8c84-ee64069327f1`;
+SHOW GRANTS ON CATALOG workspace;
+SHOW GRANTS ON SCHEMA workspace.retail_intelligence;
 ```
 
 Phase 5 validation commands run:
