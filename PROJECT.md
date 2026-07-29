@@ -311,7 +311,7 @@ Validation results:
 - AppKit validation: `databricks apps validate --profile sa_profile` passed.
 - App deployment: `databricks bundle run retail_intelligence_app -t dev --profile sa_profile` passed.
 - App status: `databricks apps get retail-intelligence --profile sa_profile` reports `RUNNING`.
-- Runtime app view fix: the app service principal `71dbfb5a-4671-4978-8c84-ee64069327f1` was granted `USE CATALOG` on `workspace` and `USE SCHEMA`, `SELECT` on `workspace.retail_intelligence` so SQL-backed views can read the demo tables.
+- Runtime app view fix: the app service principal `71dbfb5a-4671-4978-8c84-ee64069327f1` was granted `CAN_USE` on SQL warehouse `ffdf1653dbc170db`, `USE CATALOG` on `workspace`, and `USE SCHEMA`, `SELECT` on `workspace.retail_intelligence` so SQL-backed views can run and read the demo tables.
 - Local environment note: Node/npm are available outside the Codex sandbox. Use escalated shell commands and call `npm.cmd` instead of `npm` in PowerShell to avoid the `npm.ps1` execution-policy block.
 
 Issues found and fixed during Phase 2:
@@ -437,6 +437,23 @@ databricks apps get retail-intelligence --profile sa_profile
 ```
 
 App view permissions troubleshooting:
+
+```powershell
+databricks permissions update warehouses ffdf1653dbc170db --json '@warehouse-permissions.json' --profile sa_profile
+```
+
+With `warehouse-permissions.json` containing:
+
+```json
+{
+  "access_control_list": [
+    {
+      "service_principal_name": "71dbfb5a-4671-4978-8c84-ee64069327f1",
+      "permission_level": "CAN_USE"
+    }
+  ]
+}
+```
 
 ```sql
 GRANT USE CATALOG ON CATALOG workspace TO `71dbfb5a-4671-4978-8c84-ee64069327f1`;

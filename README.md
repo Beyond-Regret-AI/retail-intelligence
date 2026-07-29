@@ -62,6 +62,10 @@ Current generated actions use deterministic fallback logic and should not be des
 
 If the app shows `Unable to load this view`, verify the Databricks App service principal has read access to the Unity Catalog data:
 
+```powershell
+databricks permissions update warehouses ffdf1653dbc170db --json '@warehouse-permissions.json' --profile sa_profile
+```
+
 ```sql
 GRANT USE CATALOG ON CATALOG workspace TO `71dbfb5a-4671-4978-8c84-ee64069327f1`;
 GRANT USE SCHEMA, SELECT ON SCHEMA workspace.retail_intelligence TO `71dbfb5a-4671-4978-8c84-ee64069327f1`;
