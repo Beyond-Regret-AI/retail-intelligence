@@ -1,0 +1,25 @@
+bundle:
+  name: retail-intelligence
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    default: workspace
+  schema:
+    default: retail_intelligence
+  warehouse_id:
+    default: ffdf1653dbc170db
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      profile: sa_profile
+    variables:
+      catalog: workspace
+      schema: retail_intelligence
+      warehouse_id: ffdf1653dbc170db
+

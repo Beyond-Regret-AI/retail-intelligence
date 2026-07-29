@@ -1,0 +1,2 @@
+"""Retail Intelligence prototype package."""
+

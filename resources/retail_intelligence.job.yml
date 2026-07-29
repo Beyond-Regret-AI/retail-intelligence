@@ -1,0 +1,21 @@
+resources:
+  jobs:
+    retail_intelligence_pipeline:
+      name: "[${bundle.target}] retail-intelligence-pipeline"
+      max_concurrent_runs: 1
+      tags:
+        project: retail-intelligence
+        target: ${bundle.target}
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+      tasks:
+        - task_key: build_bronze_silver
+          notebook_task:
+            notebook_path: ../src/retail_intelligence/pipelines/run_pipeline.py
+            base_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              schema: "{{job.parameters.schema}}"
+
