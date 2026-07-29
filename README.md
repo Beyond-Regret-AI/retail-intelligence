@@ -24,7 +24,7 @@ flowchart TD
 
 ## Current Phase
 
-Phase 4 adds deterministic, grounded retention-action generation to the existing Bronze/Silver/Gold pipeline.
+Phase 5 adds the AppKit source for the three-page Databricks App: Executive Overview, Customer 360, and Retention Copilot.
 
 ## Local Validation
 
@@ -32,6 +32,19 @@ Phase 4 adds deterministic, grounded retention-action generation to the existing
 python -m pytest
 databricks bundle validate --strict -t dev --profile sa_profile
 databricks experiments get-by-name /Users/reza.khamooshi@gmail.com/retail-intelligence/churn --profile sa_profile
+```
+
+App validation and deployment:
+
+```powershell
+cd app\retail-intelligence
+npm.cmd install
+npm.cmd run typegen
+npm.cmd run typecheck
+databricks apps validate --profile sa_profile
+cd ..\..
+databricks bundle deploy -t dev --profile sa_profile
+databricks bundle run retail_intelligence_app -t dev --profile sa_profile
 ```
 
 ## Deploy And Run
@@ -45,4 +58,8 @@ databricks bundle run retail_intelligence_pipeline -t dev --profile sa_profile
 
 ## Known Limitations
 
-The Databricks App is intentionally deferred to the next phase. Current generated actions use deterministic fallback logic and should not be described as live LLM output.
+Current generated actions use deterministic fallback logic and should not be described as live LLM output.
+
+## App URL
+
+https://retail-intelligence-7474645848673684.aws.databricksapps.com

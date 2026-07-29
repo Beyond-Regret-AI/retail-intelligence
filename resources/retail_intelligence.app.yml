@@ -1,0 +1,11 @@
+resources:
+  apps:
+    retail_intelligence_app:
+      name: retail-intelligence
+      description: Retail intelligence Customer 360 and retention demo.
+      source_code_path: ../app/retail-intelligence
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE

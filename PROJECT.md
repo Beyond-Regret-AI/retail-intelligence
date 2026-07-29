@@ -8,7 +8,7 @@ Mid-sized retail leaders lack a governed, connected view of customer risk becaus
 
 ## Phase 1 Status
 
-Status: Phase 4 complete, awaiting approval to proceed to Phase 5.
+Status: Phase 6 complete. App validated, deployed, and running.
 
 Completed locally:
 
@@ -234,6 +234,9 @@ Databricks resources created or updated:
 - Successful run URL: `https://dbc-dee9e2b6-b2e5.cloud.databricks.com/jobs/622776603050686/runs/168518623052951?o=7474645848673684`
 - Latest successful Phase 3 run URL: `https://dbc-dee9e2b6-b2e5.cloud.databricks.com/jobs/622776603050686/runs/106579937653629?o=7474645848673684`
 - Latest successful Phase 4 run URL: `https://dbc-dee9e2b6-b2e5.cloud.databricks.com/jobs/622776603050686/runs/359342286938614?o=7474645848673684`
+- App URL: `https://retail-intelligence-7474645848673684.aws.databricksapps.com`
+- App deployment ID: `01f18b7de4821bb4bcc27d2b7ba52343`
+- App status: `RUNNING`
 - MLflow experiment: `/Users/reza.khamooshi@gmail.com/retail-intelligence/churn`
 - MLflow experiment ID: `1893970378577632`
 - Bronze tables:
@@ -274,12 +277,14 @@ Local files created:
 - `tests/test_customer360.py`
 - `tests/test_churn.py`
 - `tests/test_retention.py`
+- `app/retail-intelligence`
+- `resources/retail_intelligence.app.yml`
 
 ## Current Implementation Status
 
-Phase 4 is complete.
+Phase 6 is complete.
 
-The local repo, available skill/tool surface, Databricks MCP server, workspace resources, and AppKit capabilities have been inspected. The isolated schema, DAB skeleton, deterministic synthetic data, Bronze/Silver pipeline, churn features, Spark ML churn model, MLflow experiment, Gold predictions, deterministic retention-action generator, and serverless Lakeflow Job are implemented and validated.
+The local repo, available skill/tool surface, Databricks MCP server, workspace resources, and AppKit capabilities have been inspected. The isolated schema, DAB skeleton, deterministic synthetic data, Bronze/Silver pipeline, churn features, Spark ML churn model, MLflow experiment, Gold predictions, deterministic retention-action generator, serverless Lakeflow Job, and three-page Databricks App are implemented, validated, deployed, and running.
 
 Validation results:
 
@@ -301,6 +306,12 @@ Validation results:
 - Serving endpoint smoke tests:
   - `databricks-claude-sonnet-5` returned `RESOURCE_DOES_NOT_EXIST` when queried despite appearing in the endpoint list.
   - `databricks-gpt-oss-20b` was reachable, but the tiny response was not reliable enough for a live customer demo.
+- Phase 5 SQL validation: representative Executive Overview, churn-driver, customer-action, Customer 360 detail, transaction, support, and operations queries passed against SQL warehouse `ffdf1653dbc170db`.
+- Phase 6 root DAB validation: `databricks bundle validate --strict -t dev --profile sa_profile` passed with the app resource included.
+- AppKit validation: `databricks apps validate --profile sa_profile` passed.
+- App deployment: `databricks bundle run retail_intelligence_app -t dev --profile sa_profile` passed.
+- App status: `databricks apps get retail-intelligence --profile sa_profile` reports `RUNNING`.
+- Local environment note: Node/npm are available outside the Codex sandbox. Use escalated shell commands and call `npm.cmd` instead of `npm` in PowerShell to avoid the `npm.ps1` execution-policy block.
 
 Issues found and fixed during Phase 2:
 
@@ -313,20 +324,15 @@ Issues found and fixed during Phase 2:
 
 ## Remaining Tasks
 
-Approval needed before Phase 5:
+Remaining tasks:
 
-- Build the three-page Databricks App.
-- Use AppKit with the `analytics` plugin and SQL warehouse `ffdf1653dbc170db`.
-- Show Executive Overview, Customer 360, and Retention Copilot as the only primary pages.
-- Preserve selected `customer_id` across navigation.
-- Keep the Operations panel expandable rather than making it a fourth page.
-- Show generated actions from `gold_customer_retention_actions` without claiming live LLM generation.
+- Optional: perform manual business-demo walkthrough in the running Databricks App.
+- Optional: commit the finished prototype.
 - Keep existing `streaming-churn-demo-*` resources untouched.
 
 Future phases:
 
-- Phase 5: three-page Databricks App.
-- Phase 6: tests, bundle validation, deployment, and demo validation.
+- Production evolution: permissions, scheduled jobs, stronger model validation, live GenAI integration, and richer observability.
 
 ## Exact Deployment and Validation Commands
 
@@ -426,5 +432,30 @@ databricks bundle run retail_intelligence_pipeline -t dev --profile sa_profile
 Direct app status after deployment:
 
 ```powershell
+databricks apps get retail-intelligence --profile sa_profile
+```
+
+Phase 5 validation commands run:
+
+```powershell
+databricks warehouses start ffdf1653dbc170db --profile sa_profile
+databricks apps init --name retail-intelligence --features analytics --set analytics.sql-warehouse.id=ffdf1653dbc170db --description "Retail intelligence Customer 360 and retention demo" --run none --output-dir app --profile sa_profile
+databricks bundle validate --strict -t dev --profile sa_profile
+databricks apps validate --profile sa_profile
+node -v
+npm -v
+```
+
+Phase 6 commands run:
+
+```powershell
+cd app\retail-intelligence
+npm.cmd install
+npm.cmd run typegen
+npm.cmd run typecheck
+databricks apps validate --profile sa_profile
+cd ..\..
+databricks bundle deploy -t dev --profile sa_profile
+databricks bundle run retail_intelligence_app -t dev --profile sa_profile
 databricks apps get retail-intelligence --profile sa_profile
 ```
